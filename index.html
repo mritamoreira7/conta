@@ -1,0 +1,668 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Racha a Conta</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&display=swap">
+<style>
+/* Look: a food-delivery app. Warm off-white ground, white cards with 24px corners, one hot orange, black pills, a yellow chip for small labels, rounded geometric type (Quicksand) everywhere. Navigation is a black pill with the active tab in orange; the running total floats at the bottom as an orange pill, like an "add to cart" bar. */
+:root{
+  --bg:#FAF4F0; --surface:#FFFFFF; --field:#F4EEEA; --ink:#1A1412; --muted:#6B5F5A; --line:#EFE7E2;
+  --orange:#E43D00; --orange-deep:#B83100; --yellow:#FFD43B; --yellow-ink:#1A1412;
+  --pill:#0D0B0A; --pill-ink:#FFFFFF;
+  --nav:#0D0B0A; --nav-btn:#FFFFFF; --nav-btn-ink:#1A1412;
+  --cell-off:#EDE5E0;
+  --warn:#B3261E; --warn-bg:#FDE8E4;
+  --font:'Quicksand','Nunito',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#1A1311; --surface:#261C18; --field:#33261F; --ink:#F7F0EC; --muted:#B8A8A0; --line:#382B25;
+    --pill:#F7F0EC; --pill-ink:#1A1412;
+    --nav:#0A0706; --nav-btn:#2D221D; --nav-btn-ink:#F7F0EC;
+    --cell-off:#41322B;
+    --warn:#FF9A8F; --warn-bg:#3B1E1A;
+    color-scheme:dark;
+  }
+}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font:500 16px/1.45 var(--font); font-variant-numeric:tabular-nums;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:140px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
+h1,h2{text-wrap:balance}
+
+.wrap{max-width:640px;margin:0 auto}
+
+/* header */
+.top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding-top:20px}
+h1{margin:0;font:700 30px/1.1 var(--font);letter-spacing:-.01em}
+.tagline{margin:4px 0 0;color:var(--muted);font-size:14px;font-weight:500}
+.hbtns{display:flex;flex-wrap:wrap;gap:8px}
+.ghost{min-height:42px;padding:0 18px;border:0;border-radius:999px;background:var(--surface);color:var(--ink);font-weight:700;white-space:nowrap}
+.ghost.dark{background:var(--pill);color:var(--pill-ink)}
+.ghost.hot{background:var(--orange);color:#fff}
+#banner:not(:empty){margin-top:14px}
+
+/* tabs: a black pill, active tab in orange */
+.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-top:14px;padding-bottom:2px}
+.tablist{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;padding:4px;border-radius:999px;background:var(--nav)}
+.tablist button{display:flex;align-items:center;justify-content:center;gap:6px;min-height:46px;border:0;border-radius:999px;background:var(--nav-btn);color:var(--nav-btn-ink);font-weight:700}
+.tablist button[aria-selected="true"]{background:var(--orange);color:#fff}
+.count{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 6px;border-radius:11px;background:var(--yellow);color:var(--yellow-ink);font-size:12px;font-weight:700}
+
+#view{display:grid;gap:16px;padding-top:16px}
+
+/* section header with a yellow chip, like "Top picks … See all" */
+.sec{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.sec h2{margin:0;font-size:20px;font-weight:700}
+.chip{display:inline-block;padding:4px 12px;border-radius:999px;background:var(--yellow);color:var(--yellow-ink);font-size:13px;font-weight:700;white-space:nowrap}
+.chip.dark{background:var(--pill);color:var(--pill-ink)}
+
+/* forms */
+.card{background:var(--surface);border-radius:24px}
+.form{display:grid;gap:12px;padding:16px}
+.fl{display:grid;gap:6px;min-width:0;color:var(--muted);font-size:13px;font-weight:700}
+.form-grid{display:grid;grid-template-columns:minmax(0,1fr) 136px;gap:10px}
+.form-grid2{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:end}
+.field{width:100%;min-width:0;min-height:48px;padding:0 16px;border:2px solid transparent;border-radius:16px;background:var(--field);color:var(--ink);font-weight:600}
+.field::placeholder{color:var(--muted);opacity:.75;font-weight:500}
+.field:focus{border-color:var(--orange);outline:none}
+.field[aria-invalid="true"]{border-color:var(--warn)}
+textarea.field{padding:12px 16px;resize:none;line-height:1.4}
+.money{position:relative;display:block}
+.money>span{position:absolute;left:16px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:14px;font-weight:700;pointer-events:none}
+.money .field{padding-left:44px}
+.btn{min-height:52px;padding:0 24px;border:0;border-radius:999px;background:var(--orange);color:#fff;font-size:18px;font-weight:700}
+.btn.full{width:100%}
+.btn-2{width:100%;min-height:50px;border:0;border-radius:999px;background:var(--pill);color:var(--pill-ink);font-size:17px;font-weight:700}
+.hint,.note{margin:0;color:var(--muted);font-size:13px;font-weight:600}
+.err{margin:0;color:var(--warn);font-size:14px;font-weight:600}
+
+/* drinks */
+.rows{overflow:hidden;background:var(--surface);border-radius:24px}
+.row{display:grid;grid-template-columns:44px minmax(0,1fr) 128px 40px;gap:10px;align-items:center;padding:12px 14px}
+.row+.row{border-top:1px solid var(--line)}
+.row .money .field{text-align:right}
+.coaster{display:grid;place-items:center;width:44px;height:44px;border-radius:16px;background:var(--orange);color:#fff;font-size:18px;font-weight:700}
+.rl{min-width:0}
+.label{width:100%;min-width:0;padding:2px 0;border:0;border-bottom:2px solid transparent;background:transparent;font-weight:700;text-overflow:ellipsis}
+.label:hover,.label:focus{border-bottom-color:var(--line);outline:none}
+.rl small{display:block;color:var(--muted);font-size:13px;font-weight:600}
+.rl small.bad{color:var(--warn);font-weight:700}
+.icon{display:grid;place-items:center;width:40px;height:40px;border:0;border-radius:50%;background:var(--field);color:var(--muted)}
+.icon:hover{color:var(--ink)}
+
+/* people */
+.people{display:grid;gap:12px}
+.person{display:grid;gap:12px;padding:16px;background:var(--surface);border-radius:24px}
+.p-top{display:grid;grid-template-columns:minmax(0,1fr) 40px;gap:8px;align-items:center}
+.p-name{width:100%;min-width:0;padding:2px 0;border:0;border-bottom:2px solid transparent;background:transparent;font-size:20px;font-weight:700}
+.p-name:hover,.p-name:focus{border-bottom-color:var(--line);outline:none}
+.strip{display:flex;flex-wrap:wrap;gap:4px}
+.cell{width:12px;height:20px;border-radius:6px;background:var(--cell-off)}
+.cell.on{background:var(--orange)}
+.p-meta{margin:0;color:var(--muted);font-size:13px;font-weight:600}
+.ctl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+
+/* split: orange banner card, black price pills */
+.hero{position:relative;overflow:hidden;display:grid;gap:10px;padding:20px;border-radius:24px;color:#fff;background:linear-gradient(140deg,#E83F00,#CC3200)}
+.hero::before{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at 92% 8%,rgba(255,255,255,.2) 0 22%,transparent 23%),radial-gradient(circle at 4% 112%,rgba(0,0,0,.16) 0 34%,transparent 35%)}
+.hero>*{position:relative}
+.hero-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.hero .lbl{font-size:14px;font-weight:700}
+.hero .big{font-size:48px;font-weight:700;line-height:1;letter-spacing:-.02em;overflow-wrap:anywhere}
+.hero .big small{margin-right:8px;font-size:22px;font-weight:700}
+.hero .break{display:flex;flex-wrap:wrap;gap:4px 18px;font-size:14px;font-weight:600}
+.split{overflow:hidden;background:var(--surface);border-radius:24px}
+.srow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;padding:14px 16px}
+.srow+.srow{border-top:1px solid var(--line)}
+.nm{font-size:17px;font-weight:700;overflow-wrap:anywhere}
+.nm small{display:block;color:var(--muted);font-size:13px;font-weight:600}
+.amt{padding:7px 14px;border-radius:999px;background:var(--pill);color:var(--pill-ink);font-size:18px;font-weight:700;white-space:nowrap}
+.warn{margin:0;padding:12px 16px;border-radius:18px;background:var(--warn-bg);color:var(--warn);font-size:14px;font-weight:600}
+.empty{display:grid;gap:10px;padding:24px 18px;border-radius:24px;background:var(--surface);text-align:center}
+.empty h2{margin:0;font-size:20px;font-weight:700}
+.empty p{margin:0;color:var(--muted);font-weight:500}
+.empty .acts{display:flex;flex-wrap:wrap;justify-content:center;gap:10px}
+.empty .ghost{background:var(--field)}
+
+/* bottom bar: an orange pill like "Add to cart" */
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:10;padding-top:20px;padding-bottom:max(14px,env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));background:linear-gradient(to top,var(--bg) 62%,transparent)}
+.bar-in{display:flex;align-items:center;justify-content:space-between;gap:10px;max-width:640px;margin:0 auto;padding:8px 8px 8px 22px;border-radius:999px;background:var(--orange);color:#fff;box-shadow:0 10px 24px rgba(228,61,0,.28)}
+.sum{min-width:0}
+.sum small{display:block;font-size:13px;font-weight:600}
+.sum strong{display:block;font-size:22px;font-weight:700;line-height:1.1;overflow-wrap:anywhere}
+.seg{display:inline-grid;grid-template-columns:1fr 1fr;padding:4px;border-radius:999px;background:var(--orange-deep)}
+.seg button{min-height:42px;padding:0 14px;border:0;border-radius:999px;background:transparent;color:#fff;font-weight:700;white-space:nowrap}
+.seg button[aria-pressed="true"]{background:#fff;color:#1A1412}
+@media (max-width:380px){.seg button{padding:0 10px;font-size:14px}.bar-in{padding-left:16px}}
+
+.toast{position:fixed;left:50%;bottom:calc(104px + env(safe-area-inset-bottom,0px));z-index:20;max-width:calc(100% - 32px);padding:10px 18px;border-radius:999px;background:var(--pill);color:var(--pill-ink);font-size:14px;font-weight:700;text-align:center;opacity:0;transform:translateX(-50%);transition:opacity .2s;pointer-events:none}
+.toast.show{opacity:1}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top" id="top"></header>
+  <div id="banner"></div>
+  <nav class="tabs" id="tabsnav" aria-label="Seções" hidden><div class="tablist" role="tablist" id="tabs"></div></nav>
+  <main id="view" role="tabpanel"></main>
+</div>
+<div class="bar" id="bar" hidden></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<!-- CONFIGURAÇÃO: cole aqui a URL do projeto e a chave pública (anon / publishable) do Supabase. -->
+<script>
+window.RACHA_CONFIG = {
+  url: 'COLE_AQUI_A_URL_DO_PROJETO',
+  key: 'COLE_AQUI_A_CHAVE_PUBLICA'
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+(function(){
+'use strict';
+
+// <pure>
+function isIn(p,num){ return num>=p.from && (p.to===null || num<=p.to); }
+
+function parseMoney(s){
+  s=String(s||'').replace(/R\$/gi,'').replace(/\s/g,'');
+  if(!s) return null;
+  if(s.indexOf(',')>-1){ s=s.replace(/\./g,'').replace(',','.'); }
+  else if(/^\d{1,3}(\.\d{3})+$/.test(s)){ s=s.replace(/\./g,''); }
+  if(!/^\d+(\.\d{1,2})?$/.test(s)) return null;
+  var c=Math.round(parseFloat(s)*100);
+  return c>0?c:null;
+}
+function fmtMoney(c){ return (c/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
+function inputMoney(c){ return (c/100).toFixed(2).replace('.',','); }
+
+function compute(st){
+  var per=[],cnt=[],j;
+  for(j=0;j<st.people.length;j++){ per.push(0); cnt.push(0); }
+  var base=0,total=0,unalloc=0,empty=[];
+  st.rounds.forEach(function(r,ri){
+    var num=ri+1;
+    var c=st.service?Math.round(r.cents*11/10):r.cents;
+    base+=r.cents; total+=c;
+    var present=[];
+    st.people.forEach(function(p,idx){ if(isIn(p,num)) present.push(idx); });
+    if(!present.length){ unalloc+=c; empty.push(num); return; }
+    var n=present.length,b=Math.floor(c/n),rem=c-b*n;
+    present.forEach(function(idx,k){ per[idx]+=b+(((k+ri)%n)<rem?1:0); cnt[idx]++; });
+  });
+  return {per:per,cnt:cnt,base:base,total:total,service:total-base,unalloc:unalloc,empty:empty};
+}
+// </pure>
+
+var CFG=window.RACHA_CONFIG||{};
+var CID=(function(){
+  var c=new URLSearchParams(location.search).get('c')||'';
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(c)?c.toLowerCase():null;
+})();
+
+function $(id){ return document.getElementById(id); }
+function ESC(s){ return String(s).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function byId(list,id){ for(var i=0;i<list.length;i++){ if(list[i].id===id) return list[i]; } return null; }
+function uuid(){
+  if(window.crypto&&typeof window.crypto.randomUUID==='function') return window.crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){ var r=Math.random()*16|0; return (c==='x'?r:(r&3|8)).toString(16); });
+}
+
+var TRASH='<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>';
+
+/* What the screen shows. The server copy wins on every refresh. */
+var state={people:[],rounds:[],service:true,tab:'pessoas'};
+var ui={fatal:null,loaded:false,confirm:false,copyText:null,linkText:null,focusLink:false,addFrom:null,
+  confirmTimer:null,toastTimer:null,down:false,dirty:false,raf:0,tabSet:false,
+  pending:0,epoch:0,sig:'',offline:false,creating:false,chain:Promise.resolve()};
+var sb=null;
+
+function configured(){ return /^https?:\/\//.test(CFG.url||'')&&String(CFG.key||'').length>20; }
+function ready(){ return !!sb&&!!CID&&!ui.fatal&&ui.loaded; }
+function tabKey(){ return 'racha-aba-'+CID; }
+function loadTab(){ try{ var t=localStorage.getItem(tabKey()); if(t==='pessoas'||t==='cervejas'||t==='divisao') return t; }catch(e){} return null; }
+function saveTab(){ try{ localStorage.setItem(tabKey(),state.tab); }catch(e){} }
+
+function normalize(){
+  var N=state.rounds.length;
+  if(['pessoas','cervejas','divisao'].indexOf(state.tab)<0) state.tab='pessoas';
+  state.people.forEach(function(p){
+    p.from=Math.min(Math.max(1,(p.from|0)||1),N+1);
+    if(p.to===null||p.to===undefined){ p.to=null; }
+    else { p.to=Math.min(p.to|0,N); if(p.to<p.from) p.to=null; }
+  });
+}
+function defaultFrom(){ return state.people.length?state.rounds.length+1:1; }
+
+function toast(msg){
+  var t=$('toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(ui.toastTimer);
+  ui.toastTimer=setTimeout(function(){ t.classList.remove('show'); },2600);
+}
+
+/* ---------- views ---------- */
+function msgBox(h,p,extra){ return '<div class="empty"><h2>'+h+'</h2><p>'+p+'</p>'+(extra||'')+'</div>'; }
+
+function renderTop(){
+  var b='';
+  if(ready()){
+    b='<div class="hbtns"><button type="button" class="ghost" data-act="link">Copiar link</button>'+
+      '<button type="button" class="ghost dark'+(ui.confirm?' hot':'')+'" data-act="newbill">'+(ui.confirm?'Criar outra conta?':'Nova conta')+'</button></div>';
+  }
+  $('top').innerHTML='<div><h1>Racha a Conta</h1><p class="tagline">Cada um paga só as cervejas que bebeu.</p></div>'+b;
+  $('banner').innerHTML=ui.linkText!==null&&ready()?'<label class="fl" for="link-box">Selecione e copie o link<input id="link-box" class="field" readonly value="'+ESC(ui.linkText)+'"></label>':'';
+  if(ui.focusLink){ ui.focusLink=false; var lb=$('link-box'); if(lb){ lb.focus(); lb.select(); } }
+}
+
+function renderTabs(){
+  $('tabsnav').hidden=!ready();
+  if(!ready()){ $('tabs').innerHTML=''; return; }
+  var items=[['pessoas','Pessoas',state.people.length],['cervejas','Cervejas',state.rounds.length],['divisao','Divisão',null]];
+  $('tabs').innerHTML=items.map(function(it){
+    return '<button type="button" role="tab" id="tab-'+it[0]+'" data-tab="'+it[0]+'" aria-selected="'+(state.tab===it[0])+'">'+it[1]+(it[2]!==null?' <span class="count">'+it[2]+'</span>':'')+'</button>';
+  }).join('');
+}
+
+function renderBar(){
+  $('bar').hidden=!ready();
+  if(!ready()) return;
+  var c=compute(state);
+  $('bar').innerHTML='<div class="bar-in"><div class="sum"><small>Total '+(state.service?'com':'sem')+' 10%</small><strong>'+fmtMoney(c.total)+'</strong></div>'+
+    '<div class="seg" role="group" aria-label="Acrescentar 10% do garçom">'+
+    '<button type="button" data-act="svc" data-val="off" aria-pressed="'+(!state.service)+'">Sem 10%</button>'+
+    '<button type="button" data-act="svc" data-val="on" aria-pressed="'+state.service+'">Com 10%</button></div></div>';
+}
+
+function viewRounds(){
+  var N=state.rounds.length,last=N?state.rounds[N-1].cents:null;
+  var h='<form id="roundForm" class="card form" novalidate autocomplete="off">'+
+    '<div class="form-grid">'+
+    '<label class="fl" for="r-label">Bebida<input id="r-label" class="field" type="text" placeholder="Cerveja" maxlength="40"></label>'+
+    '<label class="fl" for="r-price">Valor<span class="money"><span>R$</span><input id="r-price" class="field" inputmode="decimal" placeholder="0,00" value="'+(last?inputMoney(last):'')+'"></span></label>'+
+    '</div>'+
+    '<p class="err" id="r-err" hidden>Digite um valor maior que zero, como 18,50.</p>'+
+    '<button class="btn full" type="submit">Adicionar nº '+(N+1)+'</button></form>';
+  if(!N){
+    return h+msgBox('Nenhuma cerveja ainda','Coloque o valor da primeira acima. Quem estiver na mesa entra na divisão.');
+  }
+  h+='<div class="sec"><h2>Bebidas</h2><span class="chip">'+(N>1?'mais recentes primeiro':'1 bebida')+'</span></div>';
+  h+='<div class="rows">';
+  for(var i=N-1;i>=0;i--){
+    var r=state.rounds[i],n=i+1,cnt=0;
+    state.people.forEach(function(p){ if(isIn(p,n)) cnt++; });
+    var who=cnt===0?'<small class="bad">Ninguém na mesa</small>':'<small>'+cnt+(cnt===1?' pessoa':' pessoas')+'</small>';
+    h+='<div class="row"><span class="coaster">'+n+'</span>'+
+      '<div class="rl"><input class="label" id="rl-'+r.id+'" data-f="r-label" data-id="'+r.id+'" value="'+ESC(r.label)+'" aria-label="Bebida nº '+n+'">'+who+'</div>'+
+      '<span class="money"><span>R$</span><input class="field" id="rp-'+r.id+'" data-f="r-price" data-id="'+r.id+'" inputmode="decimal" value="'+inputMoney(r.cents)+'" aria-label="Valor da bebida nº '+n+'"></span>'+
+      '<button type="button" class="icon" data-act="rm-round" data-n="'+n+'" aria-label="Remover nº '+n+'">'+TRASH+'</button></div>';
+  }
+  return h+'</div>';
+}
+
+function viewPeople(){
+  var N=state.rounds.length,c=compute(state),k;
+  var sel=ui.addFrom!==null?Math.min(ui.addFrom,N+1):defaultFrom(),opts='';
+  for(k=1;k<=N+1;k++) opts+='<option value="'+k+'"'+(k===sel?' selected':'')+'>Nº '+k+(N>0&&k===N+1?' (próxima)':'')+'</option>';
+  var h='<form id="personForm" class="card form" novalidate autocomplete="off">'+
+    '<label class="fl" for="n-names">Nome<input id="n-names" class="field" type="text" placeholder="Maria, João, Pedro" maxlength="120" autocapitalize="words"></label>'+
+    '<p class="hint">Vários nomes de uma vez? Separe por vírgula.</p>'+
+    '<div class="form-grid2"><label class="fl" for="n-from">Começa na<select id="n-from" class="field" data-f="add-from">'+opts+'</select></label>'+
+    '<button class="btn" type="submit">Adicionar</button></div>'+
+    '<p class="err" id="n-err" hidden>Digite pelo menos um nome.</p></form>';
+  if(!state.people.length){
+    return h+msgBox('Ninguém na mesa ainda','Cadastre quem está bebendo e em qual cerveja cada um entrou.');
+  }
+  h+='<div class="sec"><h2>Na mesa</h2><span class="chip">'+state.people.length+(state.people.length===1?' pessoa':' pessoas')+'</span></div>';
+  h+='<div class="people">';
+  state.people.forEach(function(p,i){
+    var cells='',fromOpts='',toOpts='<option value="end"'+(p.to===null?' selected':'')+'>Até o fim</option>',n;
+    for(n=1;n<=N;n++) cells+='<span class="cell'+(isIn(p,n)?' on':'')+'" title="Nº '+n+(isIn(p,n)?': bebeu':': fora')+'"></span>';
+    for(n=1;n<=N+1;n++) fromOpts+='<option value="'+n+'"'+(n===p.from?' selected':'')+'>Nº '+n+'</option>';
+    for(n=p.from;n<=N;n++) toOpts+='<option value="'+n+'"'+(p.to===n?' selected':'')+'>Nº '+n+'</option>';
+    h+='<article class="person">'+
+      '<div class="p-top"><input class="p-name" id="pn-'+p.id+'" data-f="p-name" data-id="'+p.id+'" value="'+ESC(p.name)+'" aria-label="Nome" maxlength="60">'+
+      '<button type="button" class="icon" data-act="rm-person" data-id="'+p.id+'" aria-label="Remover '+ESC(p.name)+'">'+TRASH+'</button></div>'+
+      (N?'<div class="strip" aria-hidden="true">'+cells+'</div><p class="p-meta">Bebeu '+c.cnt[i]+' de '+N+(N===1?' bebida':' bebidas')+'</p>':'<p class="p-meta">Ainda não há cervejas na conta.</p>')+
+      '<div class="ctl"><label class="fl" for="pf-'+p.id+'">Começou na<select class="field" id="pf-'+p.id+'" data-f="p-from" data-id="'+p.id+'">'+fromOpts+'</select></label>'+
+      '<label class="fl" for="pt-'+p.id+'">Parou na<select class="field" id="pt-'+p.id+'" data-f="p-to" data-id="'+p.id+'">'+toOpts+'</select></label></div>'+
+      '</article>';
+  });
+  return h+'</div>';
+}
+
+function viewSplit(){
+  var P=state.people.length,N=state.rounds.length;
+  if(!P||!N){
+    return '<div class="empty"><h2>Falta pouco</h2><p>Cadastre pelo menos uma pessoa e uma cerveja para ver quanto cada um paga.</p>'+
+      '<div class="acts"><button type="button" class="ghost" data-tab="pessoas">Cadastrar pessoas</button><button type="button" class="ghost" data-tab="cervejas">Adicionar cervejas</button></div></div>';
+  }
+  var c=compute(state);
+  var h='<section class="hero"><div class="hero-top"><span class="lbl">Total da conta</span><span class="chip dark">'+(state.service?'Com 10%':'Sem 10%')+'</span></div>'+
+    '<span class="big"><small>R$</small>'+fmtMoney(c.total).replace(/^R\$\s?/,'')+'</span>'+
+    '<div class="break"><span>'+N+(N===1?' bebida':' bebidas')+' · '+P+(P===1?' pessoa':' pessoas')+'</span>'+
+    (state.service?'<span>Consumo '+fmtMoney(c.base)+'</span><span>10% do garçom '+fmtMoney(c.service)+'</span>':'')+
+    '</div></section><div class="split">';
+  state.people.forEach(function(p,i){
+    var sub=c.cnt[i]===0?'Não bebeu nenhuma':c.cnt[i]+' de '+N+(N===1?' bebida':' bebidas');
+    h+='<div class="srow"><span class="nm">'+ESC(p.name)+'<small>'+sub+'</small></span><span class="amt">'+fmtMoney(c.per[i])+'</span></div>';
+  });
+  h+='</div>';
+  if(c.unalloc>0){
+    h+='<p class="warn">Sem ninguém na mesa: nº '+c.empty.join(', ')+'. '+fmtMoney(c.unalloc)+' ficaram fora da divisão. Ajuste quem estava presente na aba Pessoas.</p>';
+  }
+  h+='<button type="button" class="btn-2" data-act="copy">Copiar resumo para o grupo</button>';
+  if(ui.copyText!==null){
+    h+='<label class="fl" for="copy-box">Selecione e copie<textarea id="copy-box" class="field" readonly rows="'+(P+3)+'">'+ESC(ui.copyText)+'</textarea></label>';
+  }
+  return h;
+}
+
+function viewOther(){
+  if(ui.fatal==='config') return msgBox('Falta configurar','Abra o index.html e cole a URL do projeto e a chave pública do Supabase no começo do arquivo.');
+  if(ui.fatal==='notfound') return msgBox('Conta não encontrada','Esse link não leva a nenhuma conta. Confira o link ou abra uma conta nova.','<div class="acts"><button type="button" class="btn" data-act="start">Abrir conta nova</button></div>');
+  if(ui.fatal==='error') return msgBox('Não deu para abrir a conta','Confira a conexão e recarregue a página.');
+  if(!CID) return msgBox('Divida a conta do bar','Abra uma conta, mande o link no grupo e cada um vê e lança as cervejas pelo próprio celular.','<div class="acts"><button type="button" class="btn" data-act="start">Abrir conta nova</button></div>');
+  return msgBox('Abrindo a conta…','Buscando o que está salvo.');
+}
+
+function renderView(){
+  var h=ready()?(state.tab==='cervejas'?viewRounds():state.tab==='divisao'?viewSplit():viewPeople()):viewOther();
+  /* Keep what the person is typing and where the cursor is, so a change from someone else does not wipe it. */
+  var ae=document.activeElement,keep={},fid=null,ss=null,se=null;
+  ['r-label','r-price','n-names'].forEach(function(id){
+    var el=$(id);
+    if(el&&(el===ae||el.value!==el.defaultValue)) keep[id]=el.value;
+  });
+  if(ae&&ae.id&&$('view').contains(ae)){
+    fid=ae.id;
+    if(ae.tagName==='INPUT'||ae.tagName==='TEXTAREA'){
+      keep[fid]=ae.value;
+      try{ ss=ae.selectionStart; se=ae.selectionEnd; }catch(x){}
+    }
+  }
+  $('view').innerHTML=h;
+  Object.keys(keep).forEach(function(id){ var el=$(id); if(el) el.value=keep[id]; });
+  if(fid){
+    var f=$(fid);
+    if(f){ f.focus(); if(ss!==null){ try{ f.setSelectionRange(ss,se); }catch(x){} } }
+  } else if(ui.copyText!==null&&state.tab==='divisao'){
+    var b=$('copy-box'); if(b){ b.focus(); b.select(); }
+  }
+}
+
+function render(){
+  if(ready()&&!ui.tabSet){
+    ui.tabSet=true;
+    state.tab=loadTab()||((state.people.length&&state.rounds.length)?'divisao':'pessoas');
+  }
+  normalize(); renderTop(); renderTabs(); renderView(); renderBar();
+}
+
+/* Re-draw soon, but never between a finger going down and the tap finishing. */
+function schedule(){
+  if(ui.down){ ui.dirty=true; return; }
+  if(ui.raf) return;
+  ui.raf=requestAnimationFrame(function(){ ui.raf=0; render(); });
+}
+document.addEventListener('pointerdown',function(){ ui.down=true; },true);
+function pointerUp(){
+  setTimeout(function(){ ui.down=false; if(ui.dirty){ ui.dirty=false; render(); } },80);
+}
+document.addEventListener('pointerup',pointerUp,true);
+document.addEventListener('pointercancel',pointerUp,true);
+
+/* ---------- talking to Supabase ---------- */
+function sortAt(a,b){ return (a.at-b.at)||(a.id<b.id?-1:a.id>b.id?1:0); }
+
+async function refresh(force){
+  if(!sb||!CID||ui.fatal) return;
+  var epoch=ui.epoch;
+  try{
+    var res=await Promise.all([
+      sb.from('contas').select('id,servico').eq('id',CID).maybeSingle(),
+      sb.from('pessoas').select('id,nome,entrou,parou,ordem').eq('conta_id',CID),
+      sb.from('rodadas').select('id,nome,centavos,ordem').eq('conta_id',CID)
+    ]);
+    for(var i=0;i<res.length;i++){ if(res[i].error) throw res[i].error; }
+    if(!res[0].data){ ui.fatal='notfound'; render(); return; }
+    if(epoch!==ui.epoch||ui.pending>0) return;
+    var sig=JSON.stringify([res[0].data,res[1].data,res[2].data]);
+    if(!force&&ui.loaded&&sig===ui.sig) { ui.offline=false; return; }
+    ui.sig=sig; ui.offline=false;
+    state.service=!!res[0].data.servico;
+    state.people=(res[1].data||[]).map(function(o){
+      return {id:o.id,name:String(o.nome||'').slice(0,60)||'Sem nome',from:(o.entrou|0)||1,to:(o.parou==null?null:(o.parou|0)),at:+o.ordem||0};
+    }).sort(sortAt);
+    state.rounds=(res[2].data||[]).map(function(o){
+      return {id:o.id,label:String(o.nome||'').slice(0,40)||'Cerveja',cents:Math.max(0,Math.round(+o.centavos||0)),at:+o.ordem||0};
+    }).sort(sortAt);
+    ui.loaded=true;
+    schedule();
+  }catch(e){
+    if(!ui.loaded){ ui.fatal='error'; render(); }
+    else if(!ui.offline){ ui.offline=true; toast('Sem conexão. Tentando de novo…'); }
+  }
+}
+
+/* Writes go one after another. When the last one lands, the server copy replaces the screen copy. */
+function write(fn){
+  ui.epoch++; ui.pending++;
+  var p=ui.chain.then(async function(){
+    try{ var r=await fn(); if(r&&r.error) throw r.error; return true; }
+    catch(e){ toast('Não deu para salvar. Confira a conexão.'); return false; }
+  }).then(function(ok){
+    ui.pending--;
+    if(ui.pending===0){ ui.epoch++; refresh(true); }
+    return ok;
+  });
+  ui.chain=p;
+  return p;
+}
+
+function addRound(label,cents){
+  var r={id:uuid(),label:label,cents:cents,at:Date.now()};
+  state.rounds.push(r); schedule();
+  write(function(){ return sb.from('rodadas').insert({id:r.id,conta_id:CID,nome:r.label,centavos:r.cents,ordem:r.at}); });
+}
+function patchRound(id,patch){
+  var r=byId(state.rounds,id); if(!r) return;
+  var row={};
+  if(patch.label!==undefined){ r.label=patch.label; row.nome=patch.label; }
+  if(patch.cents!==undefined){ r.cents=patch.cents; row.centavos=patch.cents; }
+  schedule();
+  write(function(){ return sb.from('rodadas').update(row).eq('id',id); });
+}
+function addPeople(names,from){
+  var base=Date.now(),rows=[];
+  names.forEach(function(n,i){
+    var p={id:uuid(),name:n,from:from,to:null,at:base+i};
+    state.people.push(p);
+    rows.push({id:p.id,conta_id:CID,nome:p.name,entrou:p.from,parou:null,ordem:p.at});
+  });
+  schedule();
+  write(function(){ return sb.from('pessoas').insert(rows); });
+}
+function patchPerson(id,patch){
+  var p=byId(state.people,id); if(!p) return;
+  var row={};
+  if(patch.name!==undefined){ p.name=patch.name; row.nome=patch.name; }
+  if(patch.from!==undefined){ p.from=patch.from; row.entrou=patch.from; }
+  if(patch.to!==undefined){ p.to=patch.to; row.parou=patch.to; }
+  schedule();
+  write(function(){ return sb.from('pessoas').update(row).eq('id',id); });
+}
+function removePerson(id){
+  state.people=state.people.filter(function(p){ return p.id!==id; }); schedule();
+  write(function(){ return sb.from('pessoas').delete().eq('id',id); });
+}
+function setService(on){
+  state.service=on; schedule();
+  write(function(){ return sb.from('contas').update({servico:on}).eq('id',CID); });
+}
+function removeRoundAt(n){
+  var r=state.rounds[n-1]; if(!r) return;
+  state.rounds.splice(n-1,1);
+  var N=state.rounds.length,changes=[];
+  state.people.forEach(function(p){
+    var nf=p.from,nt=p.to;
+    if(nf>n) nf--;
+    if(nt!==null&&nt>=n) nt--;
+    nf=Math.min(Math.max(1,nf),N+1);
+    if(nt!==null&&nt<nf) nt=null;
+    if(nf!==p.from||nt!==p.to){ changes.push({id:p.id,entrou:nf,parou:nt}); p.from=nf; p.to=nt; }
+  });
+  schedule();
+  write(async function(){
+    var res=await sb.from('rodadas').delete().eq('id',r.id);
+    if(res&&res.error) return res;
+    for(var i=0;i<changes.length;i++){
+      res=await sb.from('pessoas').update({entrou:changes[i].entrou,parou:changes[i].parou}).eq('id',changes[i].id);
+      if(res&&res.error) return res;
+    }
+  });
+}
+
+async function createBill(){
+  if(ui.creating||!sb) return;
+  ui.creating=true; toast('Criando a conta…');
+  var id=uuid();
+  try{
+    var r=await sb.from('contas').insert({id:id,servico:state.service});
+    if(r&&r.error) throw r.error;
+    location.assign(location.pathname+'?c='+id);
+  }catch(e){
+    ui.creating=false; toast('Não deu para criar a conta. Confira a conexão.');
+  }
+}
+
+function summaryText(){
+  var c=compute(state);
+  var lines=['Conta do bar ('+(state.service?'com':'sem')+' 10%)'];
+  state.people.forEach(function(p,i){ lines.push(p.name+': '+fmtMoney(c.per[i])); });
+  lines.push('Total: '+fmtMoney(c.total));
+  return lines.join('\n').replace(/ /g,' ');
+}
+function copySummary(){
+  var t=summaryText();
+  function fail(){ ui.copyText=t; renderView(); }
+  try{ navigator.clipboard.writeText(t).then(function(){ toast('Resumo copiado'); },fail); }catch(e){ fail(); }
+}
+function copyLink(){
+  var u=location.href;
+  function fail(){ ui.linkText=u; ui.focusLink=true; renderTop(); }
+  try{ navigator.clipboard.writeText(u).then(function(){ toast('Link copiado'); },fail); }catch(e){ fail(); }
+}
+
+/* ---------- events ---------- */
+document.addEventListener('click',function(e){
+  var t=e.target.closest('[data-tab],[data-act]');
+  if(!t) return;
+  var a=t.dataset.act;
+  if(a==='start'){ createBill(); return; }
+  if(!ready()) return;
+  if(t.dataset.tab){ state.tab=t.dataset.tab; ui.copyText=null; ui.linkText=null; saveTab(); render(); window.scrollTo(0,0); return; }
+  if(a==='copy') copySummary();
+  else if(a==='link') copyLink();
+  else if(a==='newbill'){
+    if(!ui.confirm){
+      ui.confirm=true; renderTop();
+      clearTimeout(ui.confirmTimer);
+      ui.confirmTimer=setTimeout(function(){ ui.confirm=false; renderTop(); },3500);
+    } else { createBill(); }
+  }
+  else if(a==='svc'){ ui.copyText=null; setService(t.dataset.val==='on'); }
+  else if(a==='rm-round'){ removeRoundAt(parseInt(t.dataset.n,10)); }
+  else if(a==='rm-person'){ removePerson(t.dataset.id); }
+});
+
+document.addEventListener('change',function(e){
+  var t=e.target,f=t.dataset&&t.dataset.f;
+  if(!f||!ready()) return;
+  var id=t.dataset.id,r,p;
+  if(f==='r-label'){
+    r=byId(state.rounds,id); if(!r) return;
+    var label=t.value.trim()||'Cerveja'; t.value=label;
+    if(label!==r.label) patchRound(id,{label:label});
+  }
+  else if(f==='r-price'){
+    r=byId(state.rounds,id); if(!r) return;
+    var c=parseMoney(t.value);
+    if(c===null){ t.value=inputMoney(r.cents); toast('Valor inválido. Use algo como 18,50.'); return; }
+    t.value=inputMoney(c);
+    if(c!==r.cents) patchRound(id,{cents:c});
+  }
+  else if(f==='p-name'){
+    p=byId(state.people,id); if(!p) return;
+    var nm=t.value.trim();
+    if(!nm){ t.value=p.name; return; }
+    if(nm!==p.name) patchPerson(id,{name:nm});
+  }
+  else if(f==='p-from'){
+    p=byId(state.people,id); if(!p) return;
+    var v=parseInt(t.value,10),patch={from:v};
+    if(p.to!==null&&p.to<v) patch.to=null;
+    patchPerson(id,patch);
+  }
+  else if(f==='p-to'){
+    p=byId(state.people,id); if(!p) return;
+    patchPerson(id,{to:t.value==='end'?null:parseInt(t.value,10)});
+  }
+  else if(f==='add-from'){ ui.addFrom=parseInt(t.value,10); }
+});
+
+document.addEventListener('submit',function(e){
+  e.preventDefault();
+  if(!ready()) return;
+  var f=e.target;
+  if(f.id==='roundForm'){
+    var label=$('r-label').value.trim()||'Cerveja',c=parseMoney($('r-price').value);
+    if(c===null){ $('r-err').hidden=false; $('r-price').setAttribute('aria-invalid','true'); $('r-price').focus(); return; }
+    $('r-label').value='';
+    addRound(label,c);
+  }
+  else if(f.id==='personForm'){
+    var names=$('n-names').value.split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+    if(!names.length){ $('n-err').hidden=false; $('n-names').setAttribute('aria-invalid','true'); $('n-names').focus(); return; }
+    var from=parseInt($('n-from').value,10)||1;
+    $('n-names').value='';
+    ui.addFrom=null;
+    addPeople(names,from);
+  }
+});
+
+/* ---------- start ---------- */
+function boot(){
+  render();
+  if(!configured()){ ui.fatal='config'; render(); return; }
+  if(!window.supabase||typeof window.supabase.createClient!=='function'){ ui.fatal='error'; render(); return; }
+  try{ sb=window.supabase.createClient(CFG.url,CFG.key,{auth:{persistSession:false,autoRefreshToken:false}}); }
+  catch(e){ ui.fatal='error'; render(); return; }
+  if(!CID) return;
+  refresh(true);
+  setInterval(function(){ if(!document.hidden&&ui.pending===0&&!ui.down) refresh(false); },3000);
+  document.addEventListener('visibilitychange',function(){ if(!document.hidden&&ui.pending===0) refresh(false); });
+}
+boot();
+})();
+</script>
+</body>
+</html>
